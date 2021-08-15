@@ -102,12 +102,17 @@ class ResNet18(nn.Module):
         out = self.layer3(out)
         out = self.layer4(out)
 
+        out = self.avg_pool(out)
+        out = out.view(out.size(0),-1)
+        out = self.fc(out)
+
         return out 
 
 if __name__ == "__main__":
-    inputs = torch.zeros((16,3,227,227))
+    inputs = torch.zeros((5,3,128,128))
     model = ResNet18(num_classes=10)
     outputs = model(inputs)
     print(outputs.size())
+    print(outputs.data.size())
 
     
