@@ -120,6 +120,7 @@ class Training:
     def __init__(
         self,
         train_dir = "dataset/train/",
+        test_dir = "dataset/test/",
         num_classes=3,
         lr = 0.001,
         image_size = 150,
@@ -149,6 +150,19 @@ class Training:
             shuffle=True
         )
 
+        test_data = torchvision.datasets.ImageFolder(
+            root=test_dir,
+            transform=transforms.Compose([
+                transforms.Resize((image_size,image_size)),
+                transforms.ToTensor()
+            ])
+        )
+        self.test_data = torch.utils.data.DataLoader(
+            test_data,
+            batch_size=1,
+            shuffle=False
+        )
+
     def train(self):
         for data in tqdm(self.train_data):
             x,target = data 
@@ -158,25 +172,22 @@ class Training:
             self.optimizer.step()
         return loss 
 
-    def test(self,test_dir,name,label):
+    def test(self):
         self.model.eval()
         total = 0
         correct = 0
         with torch.no_grad():
-            for f in tqdm(os.listdir(test_dir)):
-                path = test_dir+"/"+f
-                x,target = self.maesyori(path,label)
+            for data in tqdm(self.test_data):
+                x,target = data 
                 output = self.model(x)
                 _,p = torch.max(output.data,1)
                 total += target.size(0)
                 correct += (p == target).sum().item()
         percent = 100*correct/total 
-        print("{}{:>10f}".format(name,percent))
         return percent
                 
     def maesyori(self,path,label):
         img     =   cv2.imread(path)
-        img     =   cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
         img     =   cv2.resize(img,(self.image_size,self.image_size))
         img     =   np.reshape(img,(1,self.image_size,self.image_size))
         img     =   np.transpose(img,(1,2,0))
@@ -193,13 +204,13 @@ class Training:
         plt.legend()
         plt.savefig(self.loss_png)
 
-    def save_acc_png(self,acc,name):
+    def save_acc_png(self,acc):
         plt.figure()
-        plt.plot(range(1,self.epoch+1),acc,label=str(name))
+        plt.plot(range(1,self.epoch+1),acc,label="all-acc")
         plt.xlabel('epoch')
         plt.ylabel('accuracy')
         plt.legend()
-        plt.savefig(str(name)+"_"+self.acc_png)
+        plt.savefig(self.acc_png)
 
     def save_model(self):
         torch.save(self.model.state_dict(),self.pt_name)
@@ -207,22 +218,12 @@ class Training:
 if __name__ == "__main__":
     epoch = 10
     ai = Training(epoch=epoch)
-    root_test_dir = "dataset/test/"
-    animal_list = [
-        [
-            [],[]
-        ] for i in os.listdir(root_test_dir)
-    ]
     loss = []
+    acc = []
     for e in range(epoch):
         loss.append(ai.train())
-        for i,name in enumerate(os.listdir(root_test_dir)):
-            test_path = root_test_dir+name+"/"
-            animal_list[i][0] = name 
-            animal_list[i][1].append(ai.test(test_path,name,i))
+        acc.append(ai.test())
 
     ai.save_loss_png(loss)
-    for x in animal_list:
-        ai.save_acc_png(x[1],x[0])
-    
+    ai.save_acc_png(acc)
     ai.save_model()
