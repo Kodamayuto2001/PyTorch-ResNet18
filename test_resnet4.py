@@ -1,5 +1,4 @@
 import os 
-import sys
 import cv2
 import torch 
 import numpy as np
@@ -7,6 +6,7 @@ import torchvision
 import torch.nn as nn
 from tqdm import tqdm
 import torch.nn.functional as F
+import matplotlib.pyplot as plt 
 from torchvision import transforms
 
 def conv3x3(input_channels,output_channels,stride=(1,1),groups=1,dilation=(1,1)):
@@ -116,36 +116,113 @@ class ResNet18(nn.Module):
 
         return out 
     
-def train(
-        model=ResNet18(num_classes=3),
-        trainDir="dataset/train/",
-        imageSize=150,
-        epoch=10
+class Training:
+    def __init__(
+        self,
+        train_dir = "dataset/train/",
+        num_classes=3,
+        lr = 0.001,
+        image_size = 150,
+        epoch = 10,
+        pt_name = "nn.pt",
+        loss_png = "loss.png",
+        acc_png = "acc.png"
     ):
-    train_data = torchvision.datasets.ImageFolder(
-        root=trainDir,
-        transform=torchvision.transforms.Compose([
-            transforms.Resize((imageSize,imageSize)),
-            transforms.ToTensor()
-        ])
-    )
-    train_data = torch.utils.data.DataLoader(
-        train_data,
-        batch_size=1,
-        shuffle=True
-    )
-    lossList = []
-    optimizer = torch.optim.Adam(params=model.parameters(),lr=0.001)
-    for e in range(epoch):
-        for data in tqdm(train_data):
+        self.model = ResNet18(num_classes=num_classes)
+        self.optimizer = torch.optim.Adam(params=self.model.parameters(),lr=lr)
+        self.image_size = image_size
+        self.epoch = epoch 
+        self.pt_name = pt_name
+        self.loss_png = loss_png
+        self.acc_png = acc_png
+
+        train_data = torchvision.datasets.ImageFolder(
+            root=train_dir,
+            transform=transforms.Compose([
+                transforms.Resize((image_size,image_size)),
+                transforms.ToTensor()
+            ])
+        )
+        self.train_data = torch.utils.data.DataLoader(
+            train_data,
+            batch_size=1,
+            shuffle=True
+        )
+
+    def train(self):
+        for data in tqdm(self.train_data):
             x,target = data 
-            output = model(x)
+            output = self.model(x)
             loss = F.nll_loss(output,target)
             loss.backward()
-            optimizer.step()
-        lossList.append(loss)
+            self.optimizer.step()
+        return loss 
 
+    def test(self,test_dir,name,label):
+        self.model.eval()
+        total = 0
+        correct = 0
+        with torch.no_grad():
+            for f in tqdm(os.listdir(test_dir)):
+                path = test_dir+"/"+f
+                x,target = self.maesyori(path,label)
+                output = self.model(x)
+                _,p = torch.max(output.data,1)
+                total += target.size(0)
+                correct += (p == target).sum().item()
+        percent = 100*correct/total 
+        print("{}{:>10f}".format(name,percent))
+        return percent
+                
+    def maesyori(self,path,label):
+        img     =   cv2.imread(path)
+        img     =   cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
+        img     =   cv2.resize(img,(self.image_size,self.image_size))
+        img     =   np.reshape(img,(1,self.image_size,self.image_size))
+        img     =   np.transpose(img,(1,2,0))
+        img     =   torchvision.transforms.ToTensor()(img)
+        img     =   img.unsqueeze(0)
+        label   =   torch.Tensor([label]).long()
+        return img,label
+
+    def save_loss_png(self,loss):
+        plt.figure()
+        plt.plot(range(1,self.epoch+1),loss,label="trainLoss")
+        plt.xlabel("epoch")
+        plt.ylabel("loss")
+        plt.legend()
+        plt.savefig(self.loss_png)
+
+    def save_acc_png(self,acc,name):
+        plt.figure()
+        plt.plot(range(1,self.epoch+1),acc,label=str(name))
+        plt.xlabel('epoch')
+        plt.ylabel('accuracy')
+        plt.legend()
+        plt.savefig(str(name)+"_"+self.acc_png)
+
+    def save_model(self):
+        torch.save(self.model.state_dict(),self.pt_name)
 
 if __name__ == "__main__":
-    train()
-    pass 
+    epoch = 10
+    ai = Training(epoch=epoch)
+    root_test_dir = "dataset/test/"
+    animal_list = [
+        [
+            [],[]
+        ] for i in os.listdir(root_test_dir)
+    ]
+    loss = []
+    for e in range(epoch):
+        loss.append(ai.train())
+        for i,name in enumerate(os.listdir(root_test_dir)):
+            test_path = root_test_dir+name+"/"
+            animal_list[i][0] = name 
+            animal_list[i][1].append(ai.test(test_path,name,i))
+
+    ai.save_loss_png(loss)
+    for x in animal_list:
+        ai.save_acc_png(x[1],x[0])
+    
+    ai.save_model()
