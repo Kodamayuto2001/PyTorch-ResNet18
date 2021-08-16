@@ -13,4 +13,4 @@ def rename(oldDir,newDir="dataset/renamed/"):
         shutil.copyfile(oldDir+f,newDir+str(cnt)+".jpg")
         cnt += 1
 
-rename("dataset/all/")
+rename("../dataset/renamed/Sus-scrofa/","../dataset/renamed/Sus-scrofa2/")
