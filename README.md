@@ -1,7 +1,7 @@
 # PyTorch-ResNet18
 Residual Neural Network（18層）を作っています
 
-### 1回目：失敗
+## 1回目：失敗
 - 入力する画像のサイズ：150px × 150px
 - 入力するチャンネル：3チャンネル
 - 最適化関数：Adam
