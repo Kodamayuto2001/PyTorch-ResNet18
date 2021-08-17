@@ -170,7 +170,7 @@ class Training:
             loss = F.nll_loss(output,target)
             loss.backward()
             self.optimizer.step()
-        return loss 
+        return loss.detach().numpy() 
 
     def test(self):
         self.model.eval()
