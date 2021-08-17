@@ -76,8 +76,15 @@ class ResNet18(nn.Module):
         super(ResNet18,self).__init__()
 
         #   Layer Name : conv1
+        # self.conv1 = nn.Conv2d(
+        #     3,
+        #     self.inplanes,
+        #     kernel_size=(7,7),
+        #     stride=(2,2),
+        #     padding=(3,3)
+        # )
         self.conv1 = nn.Conv2d(
-            3,
+            1,
             self.inplanes,
             kernel_size=(7,7),
             stride=(2,2),
@@ -119,11 +126,9 @@ class ResNet18(nn.Module):
 class Training:
     def __init__(
         self,
-        train_dir = "dataset/train/",
-        test_dir = "dataset/test/",
-        num_classes=3,
+        num_classes=10,
         lr = 0.001,
-        image_size = 150,
+        image_size = 28,
         epoch = 10,
         pt_name = "nn.pt",
         loss_png = "loss.png",
@@ -137,30 +142,59 @@ class Training:
         self.loss_png = loss_png
         self.acc_png = acc_png
 
-        train_data = torchvision.datasets.ImageFolder(
-            root=train_dir,
+        # train_data = torchvision.datasets.ImageFolder(
+        #     root=train_dir,
+        #     transform=transforms.Compose([
+        #         transforms.Resize((image_size,image_size)),
+        #         transforms.ToTensor()
+        #     ])
+        # )
+        # self.train_data = torch.utils.data.DataLoader(
+        #     train_data,
+        #     batch_size=1,
+        #     shuffle=True
+        # )
+
+        # test_data = torchvision.datasets.ImageFolder(
+        #     root=test_dir,
+        #     transform=transforms.Compose([
+        #         transforms.Resize((image_size,image_size)),
+        #         transforms.ToTensor()
+        #     ])
+        # )
+        # self.test_data = torch.utils.data.DataLoader(
+        #     test_data,
+        #     batch_size=1,
+        #     shuffle=False
+        # )
+        
+        train_data = torchvision.datasets.MNIST(
+            root="mnist-test/",
+            train=True,
+            download=True,
             transform=transforms.Compose([
-                transforms.Resize((image_size,image_size)),
                 transforms.ToTensor()
             ])
         )
         self.train_data = torch.utils.data.DataLoader(
             train_data,
-            batch_size=1,
-            shuffle=True
+            batch_size=64,
+            shuffle=True,
+            num_workers=2
         )
-
-        test_data = torchvision.datasets.ImageFolder(
-            root=test_dir,
+        test_data = torchvision.datasets.MNIST(
+            root="mnist-test/",
+            train=False,
+            download=True,
             transform=transforms.Compose([
-                transforms.Resize((image_size,image_size)),
                 transforms.ToTensor()
             ])
         )
         self.test_data = torch.utils.data.DataLoader(
             test_data,
-            batch_size=1,
-            shuffle=False
+            batch_size=64,
+            shuffle=False,
+            num_workers=2
         )
 
     def train(self):
