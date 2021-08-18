@@ -7,7 +7,7 @@ Residual Neural Network（18層）を作っています
 - 最適化関数：Adam
 - 学習率：0.001
 - epoch：10
-- 
+
 #### 損失関数のグラフ
 
 ![loss](https://user-images.githubusercontent.com/55943803/129902275-4834f77d-1da1-4ac0-bb56-c3fc822b1331.png)
