@@ -141,32 +141,6 @@ class Training:
         self.pt_name = pt_name
         self.loss_png = loss_png
         self.acc_png = acc_png
-
-        # train_data = torchvision.datasets.ImageFolder(
-        #     root=train_dir,
-        #     transform=transforms.Compose([
-        #         transforms.Resize((image_size,image_size)),
-        #         transforms.ToTensor()
-        #     ])
-        # )
-        # self.train_data = torch.utils.data.DataLoader(
-        #     train_data,
-        #     batch_size=1,
-        #     shuffle=True
-        # )
-
-        # test_data = torchvision.datasets.ImageFolder(
-        #     root=test_dir,
-        #     transform=transforms.Compose([
-        #         transforms.Resize((image_size,image_size)),
-        #         transforms.ToTensor()
-        #     ])
-        # )
-        # self.test_data = torch.utils.data.DataLoader(
-        #     test_data,
-        #     batch_size=1,
-        #     shuffle=False
-        # )
         
         train_data = torchvision.datasets.MNIST(
             root="mnist-test/",
