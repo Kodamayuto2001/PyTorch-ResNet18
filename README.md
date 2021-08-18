@@ -1,7 +1,7 @@
 # PyTorch-ResNet18
 Residual Neural Network（18層）を作っています
 
-## 2回目：失敗
+## 検証：2回目
 - 入力する画像：MNISTの手書き文字0～9まで10種類
 - 入力するチャンネル：1チャンネル
 - 最適化関数：Adam
