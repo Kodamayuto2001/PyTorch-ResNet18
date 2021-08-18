@@ -15,6 +15,9 @@ Residual Neural Network（18層）を作っています
 #### 精度（学習が進むほど精度が悪くなっている）
 ![acc](https://user-images.githubusercontent.com/55943803/129902268-add268e9-9ff3-47ff-ba8a-0c0a4a045546.png)
 
+#### 考察
+- ResNet18のモデルに問題がある可能性が高い
+
 ## 1回目：失敗
 - 入力する画像のサイズ：150px × 150px
 - 入力するチャンネル：3チャンネル
