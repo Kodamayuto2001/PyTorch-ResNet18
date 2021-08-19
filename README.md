@@ -1,6 +1,60 @@
 # PyTorch-ResNet18
 Residual Neural Network（18層）を作っています
 
+## 検証：3回目
+- データセット：MNIST
+- 参考にした記事：https://github.com/rasbt/deeplearning-models/blob/master/pytorch_ipynb/cnn/cnn-resnet18-mnist.ipynb
+- 学習回数：10回
+- モデル：ResNet-18
+- 最適化関数：Adam
+- 学習率：0.001
+- バッチサイズ：128
+- チャンネル：1(GrayScale)
+- 最後の活性化関数：F.softmax関数
+- 損失関数：F.cross_entropy関数
+- 入力のサイズ：28（MNISTのまま）
+- 分類数：10クラス
+
+#### 損失関数と評価関数とかかった時間
+##### 学習：1回目
+![image](https://user-images.githubusercontent.com/55943803/130061656-33a84950-8ce7-4806-bd50-557ce477dee9.png)
+
+##### 学習：2回目
+![image](https://user-images.githubusercontent.com/55943803/130061812-6455339e-b8eb-4aff-96b8-bdccc68e5620.png)
+
+##### 学習：3回目
+![image](https://user-images.githubusercontent.com/55943803/130061883-a97be024-0afd-42c4-9c63-b507d6f62c17.png)
+
+##### 学習：4回目
+![image](https://user-images.githubusercontent.com/55943803/130061941-69f5358d-5e4d-45c0-85b4-0c2b1b685781.png)
+
+##### 学習：5回目
+![image](https://user-images.githubusercontent.com/55943803/130061995-228f88be-f45d-49ba-9f53-9bacbddf501c.png)
+
+##### 学習：6回目
+![image](https://user-images.githubusercontent.com/55943803/130062055-4bf72960-e48c-456a-999e-3272bcebd7e8.png)
+
+##### 学習：7回目
+![image](https://user-images.githubusercontent.com/55943803/130062175-83e3a3c2-e934-49ff-bd27-f55d78384e26.png)
+
+##### 学習：8回目
+![image](https://user-images.githubusercontent.com/55943803/130062287-4ace7ab1-ebce-44f1-a099-ab756cf3e596.png)
+
+##### 学習：9回目
+![image](https://user-images.githubusercontent.com/55943803/130062353-812cf60a-40f9-4624-b792-3213146fff50.png)
+
+##### 学習：10回目
+![image](https://user-images.githubusercontent.com/55943803/130062418-2b6c988b-6e6f-4f46-9204-d5727a27ffd1.png)
+
+#### 全体のテストデータの評価の結果
+##### 精度：99.20%
+![image](https://user-images.githubusercontent.com/55943803/130062517-77692e5b-58f9-4d65-88a1-123ec2daa05a.png)
+
+##### テストデータから1枚選んで評価した結果
+##### 精度：100%
+![image](https://user-images.githubusercontent.com/55943803/130062678-a69a69ef-7994-48db-8cfd-797559d07988.png)
+
+
 ## 検証：2回目
 - 入力する画像：MNISTの手書き文字0～9まで10種類
 - 入力するチャンネル：1チャンネル
