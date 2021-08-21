@@ -1,6 +1,22 @@
 # PyTorch-ResNet18
 Residual Neural Network（18層）を作っています
 
+## 検証：4回目
+### とりあえず動いた
+- 1層目(conv1,bn1,relu)：128 × 1 x 256 x 256 -> 128 x 64 x 128 x 128
+- 2層目(maxpool)：-> 128 x 64 x 64 x 64
+- 3層目と4層目(conv3x3,bn1,relu,スキップコネクションがある)：-> 128 x 64 x 64 x 64 
+- 5層目と6層目(conv3x3,bn2,relu,スキップコネクションがある)：-> 128 x 64 x 64 x 64
+- 7層目と8層目(conv3x3,bn1,relu,スキップコネクションがある)：-> 128 x 128 x 32 x 32
+- 9層目と10層目(conv3x3,bn2,relu,スキップコネクションがある)：-> 128 x 128 x 32 x 32
+- 11層目と12層目(conv3x3,bn1,relu,スキップコネクションがある)：-> 128 x 128 x 16 x 16 
+- 13層目と14層目(conv3x3,bn2,relu,スキップコネクションがある)：-> 128 x 128 x 16 x 16
+- 15層目と16層目(conv3x3,bn1,relu,スキップコネクションがある)：-> 128 x 512 x 8 x 8
+- 17層目と18層目(conv3x3,bn2,relu,スキップコネクションがある)：-> 128 x 512 x 8 x 8
+- avgpool：128 x 512 x 2 x 2
+- 線形変換：512 x 2 x 2 -> 3
+- 3つに分類
+
 ## 検証：3回目
 - データセット：MNIST
 - 参考にした記事：https://github.com/rasbt/deeplearning-models/blob/master/pytorch_ipynb/cnn/cnn-resnet18-mnist.ipynb
