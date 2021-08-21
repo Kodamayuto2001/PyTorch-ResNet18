@@ -1,7 +1,10 @@
+import enum
 import os 
 import cv2
+from numpy.core.shape_base import block
 import torch 
 import numpy as np
+from torch.optim import optimizer
 import torchvision
 import torch.nn as nn
 from tqdm import tqdm
@@ -9,33 +12,27 @@ import torch.nn.functional as F
 import matplotlib.pyplot as plt 
 from torchvision import transforms
 
-def conv3x3(input_channels,output_channels,stride=(1,1),groups=1,dilation=(1,1)):
-    return nn.Conv2d(
-        input_channels,
-        output_channels,
-        kernel_size=(3,3),
-        stride=stride,
-        padding=dilation,
-        groups=groups,
-        bias=False,
-        dilation=dilation
-    )
+def conv3x3(in_planes, out_planes, stride=1):
+    """3x3 convolution with padding"""
+    return nn.Conv2d(in_planes, out_planes, kernel_size=3, stride=stride,
+                     padding=1, bias=False)
 
-def conv1x1(input_channels,output_channels,stride=(1,1)):
-    return nn.Conv2d(input_channels,output_channels,kernel_size=(1,1),bias=False)
 
 class BasicBlock(nn.Module):
-    def __init__(self,input_channels,output_channels,stride=(1,1),downsample=None):
-        super(BasicBlock,self).__init__()
-        self.conv1 = conv3x3(input_channels,output_channels,stride)
-        self.bn1 = nn.BatchNorm2d(output_channels)
-        self.relu = nn.ReLU(inplace=True)
-        self.conv2 = conv3x3(output_channels,output_channels)
-        self.bn2 = nn.BatchNorm2d(output_channels)
-        self.downsample = downsample
+    expansion = 1
 
-    def forward(self,x):
-        identity = x 
+    def __init__(self, inplanes, planes, stride=1, downsample=None):
+        super(BasicBlock, self).__init__()
+        self.conv1 = conv3x3(inplanes, planes, stride)
+        self.bn1 = nn.BatchNorm2d(planes)
+        self.relu = nn.ReLU(inplace=True)
+        self.conv2 = conv3x3(planes, planes)
+        self.bn2 = nn.BatchNorm2d(planes)
+        self.downsample = downsample
+        self.stride = stride
+
+    def forward(self, x):
+        residual = x
 
         out = self.conv1(x)
         out = self.bn1(out)
@@ -43,166 +40,200 @@ class BasicBlock(nn.Module):
 
         out = self.conv2(out)
         out = self.bn2(out)
-    
-        if self.downsample is not None:
-            identity = self.downsample(x)
 
-        out += identity
+        if self.downsample is not None:
+            residual = self.downsample(x)
+
+        out += residual
         out = self.relu(out)
 
         return out
 
-class ResidualLayer(nn.Module):
-    def __init__(self,num_blocks,input_channels,output_channels,block=BasicBlock):
-        super(ResidualLayer,self).__init__()
-        downsample = None 
-        if input_channels != output_channels:
-            downsample = nn.Sequential(
-                conv1x1(input_channels,output_channels),
-                nn.BatchNorm2d(output_channels)
-            )
-        self.first_block = block(input_channels,output_channels,downsample=downsample)
-        self.blocks = nn.ModuleList(block(output_channels,output_channels) for _ in range(num_blocks))
 
-    def forward(self,x):
-        out = self.first_block(x)
-        for block in self.blocks:
-            out = block(out)
-        return out
 
-class ResNet18(nn.Module):
-    def __init__(self,num_classes):
+
+class ResNet(nn.Module):
+
+    def __init__(self, block, layers, num_classes, grayscale):
+        self.num_classes = num_classes
         self.inplanes = 64
-        super(ResNet18,self).__init__()
-
-        #   Layer Name : conv1
-        # self.conv1 = nn.Conv2d(
-        #     3,
-        #     self.inplanes,
-        #     kernel_size=(7,7),
-        #     stride=(2,2),
-        #     padding=(3,3)
-        # )
-        self.conv1 = nn.Conv2d(
-            1,
-            self.inplanes,
-            kernel_size=(7,7),
-            stride=(2,2),
-            padding=(3,3)
-        )
+        if grayscale:
+            in_dim = 1
+        else:
+            in_dim = 3
+        super(ResNet, self).__init__()
+        self.conv1 = nn.Conv2d(in_dim, 64, kernel_size=7, stride=2, padding=3,
+                               bias=False)
         self.bn1 = nn.BatchNorm2d(64)
         self.relu = nn.ReLU(inplace=True)
-        self.maxpool = nn.MaxPool2d(
-            kernel_size=(3,3),
-            stride=(2,2),
-            padding=(1,1),
-        )
+        self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
+        self.layer1 = self._make_layer(block, 64, layers[0])
+        self.layer2 = self._make_layer(block, 128, layers[1], stride=2)
+        self.layer3 = self._make_layer(block, 256, layers[2], stride=2)
+        self.layer4 = self._make_layer(block, 512, layers[3], stride=2)
+        self.avgpool = nn.AvgPool2d(7, stride=1)
+        # self.fc = nn.Linear(128*512*2*2, num_classes)
 
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                n = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
+                m.weight.data.normal_(0, (2. / n)**.5)
+            elif isinstance(m, nn.BatchNorm2d):
+                m.weight.data.fill_(1)
+                m.bias.data.zero_()
+
+    def _make_layer(self, block, planes, blocks, stride=1):
+        downsample = None
+        if stride != 1 or self.inplanes != planes * block.expansion:
+            downsample = nn.Sequential(
+                nn.Conv2d(self.inplanes, planes * block.expansion,
+                          kernel_size=1, stride=stride, bias=False),
+                nn.BatchNorm2d(planes * block.expansion),
+            )
+
+        layers = []
+        layers.append(block(self.inplanes, planes, stride, downsample))
+        self.inplanes = planes * block.expansion
+        for i in range(1, blocks):
+            layers.append(block(self.inplanes, planes))
+
+        return nn.Sequential(*layers)
+
+    def forward(self, x):
+        # print(x.shape)
+        x = self.conv1(x)
+        # print(x.shape)
+        x = self.bn1(x)
+        # print(x.shape)
+        x = self.relu(x)
+        # print(x.shape)
+        x = self.maxpool(x)
+        # print(x.shape)
+
+        x = self.layer1(x)
+        # print(x.shape)
+        x = self.layer2(x)
+        # print(x.shape)
+        x = self.layer3(x)
+        # print(x.shape)
+        x = self.layer4(x)
+        # print(x.shape)
+        # because MNIST is already 1x1 here:
+        # disable avg pooling
+        x = self.avgpool(x)
+        # print(x.shape)
         
-        self.layer1 = ResidualLayer(2,input_channels=64,output_channels=64)
-        self.layer2 = ResidualLayer(2,input_channels=64,output_channels=128)
-        self.layer3 = ResidualLayer(2,input_channels=128,output_channels=256)
-        self.layer4 = ResidualLayer(2,input_channels=256,output_channels=512)
-        self.avg_pool = nn.AdaptiveAvgPool2d((1,1))
-        self.fc = nn.Linear(512,num_classes)
+        x = x.view(x.size(0), -1)
+        # print(x.shape)
+        logits = nn.Linear(x.shape[1],self.num_classes)(x)
+        # logits = self.fc(x)
+        # logits = nn.Linear(x.shape[0] * x.shape[1],self.num_classes)(x)
+        probas = F.softmax(logits, dim=1)
+        return logits, probas
 
-    def forward(self,x):
-        out = self.conv1(x)
-        out = self.bn1(out)
-        out = self.relu(out)
-        out = self.maxpool(out)
-
-        out = self.layer1(out)
-        out = self.layer2(out)
-        out = self.layer3(out)
-        out = self.layer4(out)
-
-        out = self.avg_pool(out)
-        out = out.view(out.size(0),-1)
-        out = F.log_softmax(out,dim=1)
-
-        return out 
     
 class Training:
     def __init__(
         self,
-        num_classes=10,
+        train_root_dir = "dataset/train/",
+        test_root_dir = "dataset/test/",
+        batch_size=128,
+        num_classes=3,
+        grayscale=True,
         lr = 0.001,
-        image_size = 28,
-        epoch = 10,
+        image_size = 256,
+        num_epoch = 10,
         pt_name = "nn.pt",
         loss_png = "loss.png",
         acc_png = "acc.png"
     ):
-        self.model = ResNet18(num_classes=num_classes)
+        self.model = ResNet(block=BasicBlock, 
+                   layers=[2, 2, 2, 2],
+                   num_classes=num_classes,
+                   grayscale=grayscale)
         self.optimizer = torch.optim.Adam(params=self.model.parameters(),lr=lr)
         self.image_size = image_size
         self.epoch = epoch 
         self.pt_name = pt_name
         self.loss_png = loss_png
         self.acc_png = acc_png
+        self.num_epoch = num_epoch
         
-        train_data = torchvision.datasets.MNIST(
-            root="mnist-test/",
-            train=True,
-            download=True,
+        train_data = torchvision.datasets.ImageFolder(
+            root=train_root_dir,
             transform=transforms.Compose([
-                transforms.ToTensor()
+                transforms.Resize((image_size,image_size)),
+                transforms.ToTensor(),
+                transforms.Grayscale()
             ])
         )
+
         self.train_data = torch.utils.data.DataLoader(
             train_data,
-            batch_size=64,
-            shuffle=True,
-            num_workers=2
+            batch_size=batch_size,
+            shuffle=True
         )
-        test_data = torchvision.datasets.MNIST(
-            root="mnist-test/",
-            train=False,
-            download=True,
+
+        test_data = torchvision.datasets.ImageFolder(
+            root=test_root_dir,
             transform=transforms.Compose([
-                transforms.ToTensor()
+                transforms.Resize((image_size,image_size)),
+                transforms.ToTensor(),
+                transforms.Grayscale()
             ])
         )
+
         self.test_data = torch.utils.data.DataLoader(
             test_data,
-            batch_size=64,
-            shuffle=False,
-            num_workers=2
+            batch_size=batch_size,
+            shuffle=False
         )
 
-    def train(self):
-        for data in tqdm(self.train_data):
-            x,target = data 
-            output = self.model(x)
-            loss = F.nll_loss(output,target)
-            loss.backward()
-            self.optimizer.step()
-        return loss.detach().numpy() 
+    # def train(self):
+    #     for data in tqdm(self.train_data):
+    #         x,target = data 
+    #         output = self.model(x)
+    #         loss = F.cross_entropy(output,target)
+    #         loss.backward()
+    #         self.optimizer.step()
+    #     return loss.detach().numpy() 
 
-    def test(self):
-        self.model.eval()
-        total = 0
-        correct = 0
-        with torch.no_grad():
-            for data in tqdm(self.test_data):
-                x,target = data 
-                output = self.model(x)
-                _,p = torch.max(output.data,1)
-                total += target.size(0)
-                correct += (p == target).sum().item()
-        percent = 100*correct/total 
-        return percent
+    # def test(self):
+    #     self.model.eval()
+    #     total = 0
+    #     correct = 0
+    #     with torch.no_grad():
+    #         for data in tqdm(self.test_data):
+    #             x,target = data 
+    #             output = self.model(x)
+    #             _,p = torch.max(output.data,1)
+    #             total += target.size(0)
+    #             correct += (p == target).sum().item()
+    #     percent = 100*correct/total 
+    #     return percent
                 
-    def maesyori(self,path,label):
-        img     =   cv2.imread(path)
-        img     =   cv2.resize(img,(self.image_size,self.image_size))
-        img     =   np.reshape(img,(1,self.image_size,self.image_size))
-        img     =   np.transpose(img,(1,2,0))
-        img     =   torchvision.transforms.ToTensor()(img)
-        img     =   img.unsqueeze(0)
-        label   =   torch.Tensor([label]).long()
-        return img,label
+    # def maesyori(self,path,label):
+    #     img     =   cv2.imread(path)
+    #     img     =   cv2.resize(img,(self.image_size,self.image_size))
+    #     img     =   np.reshape(img,(1,self.image_size,self.image_size))
+    #     img     =   np.transpose(img,(1,2,0))
+    #     img     =   torchvision.transforms.ToTensor()(img)
+    #     img     =   img.unsqueeze(0)
+    #     label   =   torch.Tensor([label]).long()
+    #     return img,label
+
+    def train(self,epoch):
+        for batch_idx,(x,targets) in enumerate(self.train_data):
+            logits, probas = self.model(x)
+            cost = F.cross_entropy(logits,targets)
+            self.optimizer.zero_grad()
+            cost.backward()
+            self.optimizer.step()
+
+            if not batch_idx % 50:
+                print ('Epoch: %03d/%03d | Batch %04d/%04d | Cost: %.4f' 
+                   %(epoch+1, self.num_epoch, batch_idx, 
+                     len(self.train_data), cost))
 
     def save_loss_png(self,loss):
         plt.figure()
@@ -223,15 +254,26 @@ class Training:
     def save_model(self):
         torch.save(self.model.state_dict(),self.pt_name)
 
-if __name__ == "__main__":
-    epoch = 10
-    ai = Training(epoch=epoch)
-    loss = []
-    acc = []
-    for e in range(epoch):
-        loss.append(ai.train())
-        acc.append(ai.test())
+    def showData(self):
+        for x,y in self.train_data:
+            # print(x.shape)
+            print(y)
 
-    ai.save_loss_png(loss)
-    ai.save_acc_png(acc)
-    ai.save_model()
+if __name__ == "__main__":
+    # epoch = 10
+    # ai = Training(epoch=epoch)
+    # loss = []
+    # acc = []
+    # for e in range(epoch):
+    #     loss.append(ai.train())
+    #     acc.append(ai.test())
+
+    # ai.save_loss_png(loss)
+    # ai.save_acc_png(acc)
+    # ai.save_model()
+    
+    epoch = 10
+    ai = Training(num_epoch=epoch)
+    # ai.showData()
+    for e in range(epoch):
+        ai.train(e)
