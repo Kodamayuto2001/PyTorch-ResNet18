@@ -13,7 +13,7 @@ Residual Neural Network（18層）を作っています
 
 #### 学習2回目の検証結果
 ![image](https://user-images.githubusercontent.com/55943803/130342393-651c50f9-008c-4bba-ac19-fdffa0db3b9b.png)
-- シカの精度     100枚中91枚正解
+- シカの精度　　 100枚中91枚正解
 - カラスの精度   100枚中11枚正解
 - イノシシの精度 100枚中28枚正解
 
