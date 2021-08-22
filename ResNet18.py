@@ -128,8 +128,8 @@ class ResNet(nn.Module):
         logits = nn.Linear(x.shape[1],self.num_classes)(x)
         # logits = self.fc(x)
         # logits = nn.Linear(x.shape[0] * x.shape[1],self.num_classes)(x)
-        probas = F.softmax(logits, dim=1)
-        return logits, probas
+        probas = F.log_softmax(logits, dim=1)
+        return probas
 
     
 class Training:
@@ -224,16 +224,15 @@ class Training:
 
     def train(self,epoch):
         for batch_idx,(x,targets) in enumerate(self.train_data):
-            logits, probas = self.model(x)
-            cost = F.cross_entropy(logits,targets)
+            output = self.model(x)
+            # print(logits)
+            # print(targets)
+            cost = F.nll_loss(output,targets)
             self.optimizer.zero_grad()
             cost.backward()
             self.optimizer.step()
 
-            if not batch_idx % 50:
-                print ('Epoch: %03d/%03d | Batch %04d/%04d | Cost: %.4f' 
-                   %(epoch+1, self.num_epoch, batch_idx, 
-                     len(self.train_data), cost))
+            print("Epoch: %03d/%03d | Batch %04d/%04d | Cost: %.4f"%(epoch+1,self.num_epoch,batch_idx,len(self.train_data),cost))
 
     def save_loss_png(self,loss):
         plt.figure()
