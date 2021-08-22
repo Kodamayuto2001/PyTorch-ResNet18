@@ -3,6 +3,9 @@ Residual Neural Network（18層）を作っています
 
 ## 検証：4回目
 ### とりあえず学習させる
+### ダメだ。学習できていない
+![image](https://user-images.githubusercontent.com/55943803/130341452-bad08a1e-1665-4c2a-9910-3966a8b85ec5.png)
+
 - バッチサイズ：128
 - 入力画像のサイズ：256 x 256
 - チャンネル：グレースケール（1チャンネル）
