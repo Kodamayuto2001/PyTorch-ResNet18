@@ -6,6 +6,8 @@ Residual Neural Network（18層）を作っています
 - バッチサイズ：128
 - 入力画像のサイズ：256 x 256
 - チャンネル：グレースケール（1チャンネル）
+- softmax関数をlog_softmax関数に変更
+- cross_entropy関数をnll_loss関数に変更
 - 1層目(conv1,bn1,relu)：128 × 1 x 256 x 256 -> 128 x 64 x 128 x 128
 - 1層目(maxpool)：-> 128 x 64 x 64 x 64
 - 2層目と3層目(conv3x3,bn1,relu,スキップコネクションがある)：-> 128 x 64 x 64 x 64 
