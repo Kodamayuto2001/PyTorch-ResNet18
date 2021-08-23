@@ -27,15 +27,15 @@ class AI:
     def __init__(
         self,
         EPOCH       =   40,
-        IMAGE_SIZE  =   160,
+        IMAGE_SIZE  =   320,
         HIDDEN_1    =   320,
-        LR          =   0.001,
+        LR          =   0.00005,
         model_num   =   3,
         TRAIN_DIR   =   "dataset/train/",
         TEST_DIR    =   "dataset/test/",
-        PT_NAME     =   "simplenet.pt",
-        LOSS_PNG    =   "simplenet-loss.png",
-        ACC_PNG     =   "simplenet-acc.png"
+        PT_NAME     =   "simplenet-2.pt",
+        LOSS_PNG    =   "simplenet-loss-2.png",
+        ACC_PNG     =   "simplenet-acc-2.png"
         ):
         self.EPOCH      =   EPOCH
         self.IMAGE_SIZE =   IMAGE_SIZE

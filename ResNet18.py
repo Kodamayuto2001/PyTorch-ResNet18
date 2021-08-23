@@ -1,12 +1,11 @@
 import enum
 import os 
 import cv2
-from numpy.core.shape_base import block
 import torch 
 import numpy as np
-from torch.optim import optimizer
 import torchvision
 import torch.nn as nn
+from torchvision.transforms.transforms import Resize
 from tqdm import tqdm
 import torch.nn.functional as F
 import matplotlib.pyplot as plt 
@@ -159,35 +158,64 @@ class Training:
         self.acc_png = acc_png
         self.num_epoch = num_epoch
         
-        train_data = torchvision.datasets.ImageFolder(
-            root=train_root_dir,
-            transform=transforms.Compose([
-                transforms.Resize((image_size,image_size)),
-                transforms.ToTensor(),
-                transforms.Grayscale()
-            ])
-        )
+        if grayscale == True:
+            train_data = torchvision.datasets.ImageFolder(
+                root=train_root_dir,
+                transform=transforms.Compose([
+                    transforms.Resize((image_size,image_size)),
+                    transforms.ToTensor(),
+                    transforms.Grayscale()
+                ])
+            )
 
-        self.train_data = torch.utils.data.DataLoader(
-            train_data,
-            batch_size=batch_size,
-            shuffle=True
-        )
+            self.train_data = torch.utils.data.DataLoader(
+                train_data,
+                batch_size=batch_size,
+                shuffle=True
+            )
 
-        test_data = torchvision.datasets.ImageFolder(
-            root=test_root_dir,
-            transform=transforms.Compose([
-                transforms.Resize((image_size,image_size)),
-                transforms.ToTensor(),
-                transforms.Grayscale()
-            ])
-        )
+            test_data = torchvision.datasets.ImageFolder(
+                root=test_root_dir,
+                transform=transforms.Compose([
+                    transforms.Resize((image_size,image_size)),
+                    transforms.ToTensor(),
+                    transforms.Grayscale()
+                ])
+            )
 
-        self.test_data = torch.utils.data.DataLoader(
-            test_data,
-            batch_size=batch_size,
-            shuffle=False
-        )
+            self.test_data = torch.utils.data.DataLoader(
+                test_data,
+                batch_size=batch_size,
+                shuffle=False
+            )
+        else:
+            train_data = torchvision.datasets.ImageFolder(
+                root=train_root_dir,
+                transform=transforms.Compose([
+                    transforms.Resize((image_size,image_size)),
+                    transforms.ToTensor()
+                ])
+            )
+
+            self.train_data = torch.utils.data.DataLoader(
+                train_data,
+                batch_size=batch_size,
+                shuffle=True
+            )
+
+            test_data = torchvision.datasets.ImageFolder(
+                root=test_root_dir,
+                transform=transforms.Compose([
+                    transforms.Resize((image_size,image_size)),
+                    transforms.ToTensor()
+                ])
+            )
+
+            self.test_data = torch.utils.data.DataLoader(
+                test_data,
+                batch_size=batch_size,
+                shuffle=False
+            )
 
     # def train(self):
     #     for data in tqdm(self.train_data):
@@ -272,7 +300,7 @@ if __name__ == "__main__":
     # ai.save_model()
     
     epoch = 10
-    ai = Training(num_epoch=epoch)
+    ai = Training(num_epoch=epoch,lr=0.001,grayscale=False)
     # ai.showData()
     for e in range(epoch):
         ai.train(e)
