@@ -21,7 +21,10 @@ Residual Neural Network（18層）を作っています
 #### ResNet18 白黒画像（1チャンネル） -> カラー画像（3チャンネル）　学習中
 ![image](https://user-images.githubusercontent.com/55943803/130442620-063a1f57-4682-434f-8be0-cb2363cfc60b.png)
 
-#### データセットに問題があると思うので、29人29000枚の昨年度うまくいったものでResNetで検証　データセットを展開中
+#### 結果：どれもうまくいかなかった
+![image](https://user-images.githubusercontent.com/55943803/130524150-01fe2131-3857-4db1-a973-ba68c968e9a6.png)
+![image](https://user-images.githubusercontent.com/55943803/130524170-ddf6dedf-ce5d-42db-abb9-fe3d952f7946.png)
+
 
 ## 検証：4回目
 ### とりあえず学習させる
