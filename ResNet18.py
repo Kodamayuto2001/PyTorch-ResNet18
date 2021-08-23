@@ -134,9 +134,9 @@ class ResNet(nn.Module):
 class Training:
     def __init__(
         self,
-        train_root_dir = "dataset/train/",
-        test_root_dir = "dataset/test/",
-        batch_size=128,
+        train_root_dir = "selected-dataset/train/",
+        test_root_dir = "selected-dataset/test/",
+        batch_size=1,
         num_classes=3,
         grayscale=True,
         lr = 0.001,
@@ -262,6 +262,18 @@ class Training:
 
             print("Epoch: %03d/%03d | Batch %04d/%04d | Cost: %.4f"%(epoch+1,self.num_epoch,batch_idx,len(self.train_data),cost))
 
+    def test(self,epoch):
+        self.model.eval()
+        correct_pred = 0
+        num_examples = 0
+        with torch.set_grad_enabled(False):
+            for i,(features,target) in enumerate(self.test_data):
+                probas = self.model(features)
+                _,predicted_labels = torch.max(probas,1)
+                num_examples += target.size(0)
+                correct_pred += (predicted_labels == target).sum()
+            print("Epoch: %03d/%03d | Train %.3f%%"%(epoch+1,self.num_epoch,correct_pred.float()/num_examples * 100))
+
     def save_loss_png(self,loss):
         plt.figure()
         plt.plot(range(1,self.epoch+1),loss,label="trainLoss")
@@ -299,8 +311,9 @@ if __name__ == "__main__":
     # ai.save_acc_png(acc)
     # ai.save_model()
     
-    epoch = 10
-    ai = Training(num_epoch=epoch,lr=0.001,grayscale=False)
+    epoch = 20
+    ai = Training(num_epoch=epoch,lr=0.001,grayscale=True)
     # ai.showData()
     for e in range(epoch):
         ai.train(e)
+        ai.test(e)
